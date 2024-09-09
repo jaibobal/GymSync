@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymSync</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        #statistics canvas {
+            height: 600px !important;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>GymSync</h1>
+    <h2>Track your powerlifting progress!</h2>
+
+    <button onclick="toggleForm()">Add New Week's Progress</button>
+    <button id="toggleStats" onclick="toggleStatistics()">Show Progress</button>
+
+    <div id="formContainer" style="display:none;">
+        <form action="{{ url_for('add') }}" method="post">
+            <h3>Enter your heaviest lifts for the week along with their respective reps!</h3>
+            <label for="bench" align="justify">Max Bench:</label>
+            <input type="number" name="bench" align="justify" required>
+            <label for="b_reps" align="justify">Bench Reps:</label>
+            <input type="number" name="b_reps" align="justify" required><br>
+            <label for="squat" align="justify">Max Squat:</label>
+            <input type="number" name="squat" align="justify" required>
+            <label for="s_reps" align="justify">Squat Reps:</label>
+            <input type="number" name="s_reps" align="justify" required><br>
+            <label for="deadlift" align="justify">Max Deadlift:</label>
+            <input type="number" name="deadlift" align="justify" required>
+            <label for="d_reps" align="justify">Deadlift Reps:</label>
+            <input type="number" name="d_reps" align="justify" required><br><br>
+            <input type="submit" value="Submit Lifts">
+        </form>
+    </div>
+
+    <div id="statistics" style="display:none;">
+        
+        <canvas id="benchChart"></canvas>
+        <canvas id="squatChart"></canvas>
+        <canvas id="deadliftChart"></canvas>
+        <canvas id="totalChart"></canvas>
+    </div>
+
+    <table>
+        <tr>
+            <th>Week</th>
+            <th>Bench</th>
+            <th>Bench Reps</th>
+            <th>Squat</th>
+            <th>Squat Reps</th>
+            <th>Deadlift</th>
+            <th>Deadlift Reps</th>
+            <th>Total (Weight * Reps)</th>
+        </tr>
+        {% for row in data %}
+        <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+            <td>{{ row[4] }}</td>
+            <td>{{ row[5] }}</td>
+            <td>{{ row[6] }}</td>
+            <td>{{ (row[1]*row[2]) + (row[3]*row[4]) + (row[5]*row[6])}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let charts = [];
+
+        function toggleForm() {
+            const formContainer = document.getElementById('formContainer');
+            formContainer.style.display = formContainer.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleStatistics() {
+            const statsContainer = document.getElementById('statistics');
+            const toggleButton = document.getElementById('toggleStats');
+
+            if (statsContainer.style.display === 'none') {
+                statsContainer.style.display = 'block';
+                toggleButton.innerText = 'Hide Statistics';
+                loadCharts();
+            } else {
+                statsContainer.style.display = 'none';
+                toggleButton.innerText = 'Show Statistics';
+                clearCharts();
+            }
+        }
+
+        function loadCharts() {
+            fetch('{{ url_for("stats") }}')
+                .then(response => response.json())
+                .then(data => {
+                    createChart('benchChart', 'Bench Progress', data.weeks, data.bench);
+                    createChart('squatChart', 'Squat Progress', data.weeks, data.squat);
+                    createChart('deadliftChart', 'Deadlift Progress', data.weeks, data.deadlift);
+                    createChart('totalChart', 'Total Progress', data.weeks, data.total);
+                })
+                .catch(error => console.error('Error loading charts:', error));
+        }
+
+        function createChart(canvasId, title, labels, data) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: data,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        },
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            charts.push(chart);
+        }
+
+        function clearCharts() {
+            charts.forEach(chart => chart.destroy());
+            charts = [];
+        }
+    </script>
+</body>
+</html>
