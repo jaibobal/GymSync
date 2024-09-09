@@ -4,13 +4,21 @@ Track your powerlifting progress via GymSync! Input your lifts weekly and see th
 File structure:
 
 /GymSync
+
 │
+
 ├── app.py
+
 ├── templates
+
 │   └── index.html
+
 ├── static
+
 │   ├── style.css
+
 │   └── chart.js
+
 └── data.db
 
 While within /GymSync, run '$ python app.py runserver -d' in terminal to launch the application.
